@@ -2,50 +2,70 @@ import pandas as pd
 import numpy as np
 import os
 
-
 def get_train_data():
-    df = pd.read_csv("data.csv") # datafram (read data in file)
+	# datafram (read data in file)
+	df = pd.read_csv("data.csv")
+	# insert kms data into X
+	X = np.array(df['km'].values)
+	# temporary X to later unscale thetas with max(X)
+	X_old = X
+	# scaling to optimize operations such as np.square or @ (matrix multiplication)
+	X = scaling(X, max(X))
+	# np.c_ with np.ones and X to slice into a matrix
+	X = np.c_[np.ones(X.shape[0]), X]
+	# insert prices data into y
+	y = np.array(df['price'].values)
+	# temporary y to later unscale thetas with max(y) 
+	y_old = y
+	# same as X scaling
+	y = scaling(y, max(y))
 
-    X = np.array(df['km'].values)
-    X_old = X
-    X = scaling(X, max(X))
-    X = np.c_[np.ones(X.shape[0]), X]
-
-    y = np.array(df['price'].values)
-    y_old = y
-    y = scaling(y, max(y))
-
-    return X, X_old, y, y_old
+	return X, X_old, y, y_old
 
 def scaling(data, scale):
-    return data / scale
+	return data / scale
+
+def cost(theta, X, y):
+	# number of price values in y
+	m = float(len(y))
+	# https://miro.medium.com/max/804/1*p18Ryw6XXMR4u5q7WPX26w.png
+	c = (1/2 * m) * np.sum(np.square((X.dot(theta)) - y))  
+	return c
 
 def	linear_regression_thetas(thetas, X, y, learning_rate, m):
+	costs = []
+	i = 0
 	while 1:
 		old_thetas = thetas
-		# https://towardsdatascience.com/an-overview-of-the-gradient-descent-algorithm-8645c9e4de1e#:~:text=The%20general%20formula%20for%20getting%20consecutive%20theta%20value
 		thetas = thetas - learning_rate * (1 / m) * (X.T @ ((X @ thetas) - y))
+		costs = np.append(costs,(cost(thetas, X, y)))
+		i = i + 1
 		if np.array_equal(thetas, old_thetas):
 			break
-	return thetas
+	return costs, i, thetas
 
 def	calcul_thetas(X, X_old, y, y_old, learning_rate):
+	# number of km values in X
 	m = float(len(X))
 	thetas = np.array([0,0])
-	thetas = linear_regression_thetas(thetas, X, y, learning_rate, m)
+	costs, i, thetas = linear_regression_thetas(thetas, X, y, learning_rate, m)
+	# unscaling
 	thetas[0] = thetas[0] * max(y_old)
 	thetas[1] = thetas[1] * (max(y_old) / max(X_old))
-	return thetas
+	return costs, i, thetas
 
-def	thetas_to_csv(thetas):
-
+def	thetas_to_csv(costs, i, thetas):
 	mode = 'r+' if os.path.exists("thetas.csv") else 'w'
 	with open("thetas.csv", mode) as fd:
-		data = "theta0,theta1\n" + str(thetas[0]) + ',' + str(thetas[1]) + '\n'
+		data_thetas = "theta0,theta1\n" + str(thetas[0]) + ',' + str(thetas[1]) + '\n'
+		data_costs = "iterations\n" + str(i) + '\n' + "costs\n" + str(costs) + '\n'
+		data = data_thetas + data_costs
 		fd.write(data)
 
 if __name__ == "__main__":
+		# https://towardsdatascience.com/an-overview-of-the-gradient-descent-algorithm-8645c9e4de1e
 		X, X_old, y, y_old = get_train_data()
-		thetas = calcul_thetas(X, X_old, y, y_old, 1)
-		thetas_to_csv(thetas)
+		costs, i, thetas = calcul_thetas(X, X_old, y, y_old, 1)
+
+		thetas_to_csv(costs, i, thetas)
 		print("\033[32;3mThetas are in thetas.csv \033[0m")
