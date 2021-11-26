@@ -23,6 +23,7 @@ def scaling(data, scale):
 def	linear_regression_thetas(thetas, X, y, learning_rate, m):
 	while 1:
 		old_thetas = thetas
+		# https://towardsdatascience.com/an-overview-of-the-gradient-descent-algorithm-8645c9e4de1e#:~:text=The%20general%20formula%20for%20getting%20consecutive%20theta%20value
 		thetas = thetas - learning_rate * (1 / m) * (X.T @ ((X @ thetas) - y))
 		if np.array_equal(thetas, old_thetas):
 			break
