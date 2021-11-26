@@ -37,7 +37,9 @@ def	linear_regression_thetas(thetas, X, y, learning_rate, m):
 	i = 0
 	while 1:
 		old_thetas = thetas
+		# linear regression formula
 		thetas = thetas - learning_rate * (1 / m) * (X.T @ ((X @ thetas) - y))
+		# X.T.dot on two 2D arrays is the same as X.T @
 		costs = np.append(costs,(cost(thetas, X, y)))
 		i = i + 1
 		if np.array_equal(thetas, old_thetas):
@@ -54,18 +56,30 @@ def	calcul_thetas(X, X_old, y, y_old, learning_rate):
 	thetas[1] = thetas[1] * (max(y_old) / max(X_old))
 	return costs, i, thetas
 
-def	thetas_to_csv(costs, i, thetas):
+def	thetas_to_csv(thetas):
 	mode = 'r+' if os.path.exists("thetas.csv") else 'w'
 	with open("thetas.csv", mode) as fd:
 		data_thetas = "theta0,theta1\n" + str(thetas[0]) + ',' + str(thetas[1]) + '\n'
-		data_costs = "iterations\n" + str(i) + '\n' + "costs\n" + str(costs) + '\n'
-		data = data_thetas + data_costs
-		fd.write(data)
+		fd.write(data_thetas)
+
+def	costs_to_csv(costs, i):
+	mode = 'r+' if os.path.exists("costs.csv") else 'w'
+	with open("costs.csv", mode) as fd:
+		data_costs = "iterations,costs\n"
+		for index in range(i):
+			if abs(costs[index] - costs[index + 1]) < 0.0001:
+				break
+			data_costs = data_costs + str(index) + ',' + str(costs[index]) + '\n'
+			
+		fd.write(data_costs)
 
 if __name__ == "__main__":
 		# https://towardsdatascience.com/an-overview-of-the-gradient-descent-algorithm-8645c9e4de1e
 		X, X_old, y, y_old = get_train_data()
 		costs, i, thetas = calcul_thetas(X, X_old, y, y_old, 1)
 
-		thetas_to_csv(costs, i, thetas)
+		thetas_to_csv(thetas)
+		costs_to_csv(costs, i)
 		print("\033[32;3mThetas are in thetas.csv \033[0m")
+		print("\033[32;3mCosts are in costs.csv \033[0m")
+		print("\033[32;3mMinimum cost is {}\033[0m".format(costs[i-1]))
